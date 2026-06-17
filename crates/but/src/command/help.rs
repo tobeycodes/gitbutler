@@ -106,6 +106,7 @@ fn print_grouped_with_truncation(
                 SubcommandDiscriminant::Clean => Group::BranchingAndCommitting,
                 #[cfg(feature = "legacy")]
                 SubcommandDiscriminant::Pick => Group::BranchingAndCommitting,
+                SubcommandDiscriminant::Switch => Group::BranchingAndCommitting,
                 #[cfg(feature = "legacy")]
                 SubcommandDiscriminant::Resolve => Group::BranchingAndCommitting,
 
@@ -328,6 +329,7 @@ Branching and Committing:
   apply        Apply a branch to the workspace
   clean        Remove empty branches from the workspace
   pick         Cherry-pick a commit from an unapplied branch into an applied v…
+  switch       Switch to a local branch, workspace branch ID, or the GitButler…
 
 Editing Commits:
   rub          Combines two entities together to perform an operation like ame…
@@ -422,6 +424,7 @@ Checkout the full docs here: https://docs.gitbutler.com/cli-overview
 
 Branching and Committing:
   branch       Commands for managing branches
+  switch       Switch to a local branch, workspace branch ID, or the GitButler…
 
 Editing Commits:
   move         Move a commit or branch to a different location
