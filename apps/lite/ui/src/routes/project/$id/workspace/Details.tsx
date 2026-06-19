@@ -888,20 +888,25 @@ const PullRequestForm: FC<{
 	body: string | null;
 }> = ({ projectId, reviewId, title, body }) => {
 	const updateReview = useUpdateReview();
+	const [draftTitle, setDraftTitle] = useState(title);
 	const [draftBody, setDraftBody] = useState(body);
-	const isDirty = draftBody !== body;
+	const trimmedDraftTitle = draftTitle.trim();
+	const isDirty = trimmedDraftTitle !== title || draftBody !== body;
+	const canSubmit = trimmedDraftTitle !== "" && isDirty && !updateReview.isPending;
 
 	const reset = () => {
+		setDraftTitle(title);
 		setDraftBody(body);
 	};
 
 	const submit: SubmitEventHandler<HTMLFormElement> = (event) => {
 		event.preventDefault();
+		if (!canSubmit) return;
 
 		updateReview.mutate({
 			projectId,
 			reviewId,
-			title: null, // TODO: draft title
+			title: trimmedDraftTitle === title ? null : trimmedDraftTitle,
 			body: draftBody === body ? null : draftBody,
 			state: null,
 			targetBase: null,
@@ -913,10 +918,10 @@ const PullRequestForm: FC<{
 			<input
 				aria-label="Pull request title"
 				className={classes("text-15 text-semibold", styles.prTitleInput)}
+				onChange={(event) => setDraftTitle(event.currentTarget.value)}
 				placeholder="Title"
-				readOnly
 				required
-				value={title}
+				value={draftTitle}
 			/>
 			<textarea
 				aria-label="Pull request description"
@@ -934,11 +939,7 @@ const PullRequestForm: FC<{
 				>
 					Reset
 				</button>
-				<button
-					className={getButtonClassName({})}
-					disabled={!isDirty || updateReview.isPending}
-					type="submit"
-				>
+				<button className={getButtonClassName({})} disabled={!canSubmit} type="submit">
 					{updateReview.isPending && <Icon name="spinner" />}
 					Update Pull Request
 				</button>
