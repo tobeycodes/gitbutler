@@ -9,8 +9,7 @@ use but_graph::workspace::commit::is_managed_workspace_by_message;
 use but_rebase::{
     commit::DateMode,
     graph_rebase::{
-        Editor, ExtraRef, GraphEditorOptions, LookupStep, Pick, Selector, Step, SuccessfulRebase,
-        ToSelector,
+        Editor, LookupStep, Pick, Selector, Step, SuccessfulRebase, ToSelector,
         mutate::{InsertSide, RelativeTo},
     },
 };
@@ -155,11 +154,9 @@ pub fn integrate_upstream<'ws, 'meta, M: RefMetadata>(
     let head_commit_id = head_commit.id;
     let head_is_workspace_commit = is_managed_workspace_by_message(head_commit.message_raw()?);
 
-    let editor_options = GraphEditorOptions {
-        extra_refs: vec![ExtraRef::immutable(target_ref.ref_name.as_ref())],
-        ..GraphEditorOptions::default()
-    };
-    let mut editor = Editor::create_with_opts(workspace, meta, repo, &editor_options)?;
+    // The editor contains every segment in the graph; the target ref's segment
+    // is reachable from HEAD and so is mutable by default.
+    let mut editor = Editor::create(workspace, meta, repo)?;
 
     let updates_with_selectors = updates
         .iter()
@@ -251,7 +248,7 @@ pub fn integrate_upstream<'ws, 'meta, M: RefMetadata>(
             // cases, we should look to see if it has a relevant reference
             // parent.
             for head in &stack.heads {
-                let Step::Reference { refname } = editor.lookup_step(*head)? else {
+                let Step::Reference { refname, .. } = editor.lookup_step(*head)? else {
                     continue;
                 };
                 if refname.as_ref() == target_ref.ref_name.as_ref() {
@@ -494,7 +491,7 @@ fn collect_stacks<'ws, 'meta, M: RefMetadata>(
                 editor
                     .lookup_step(*n)
                     .map(|step| match step {
-                        Step::Reference { refname } => Some((*n, refname)),
+                        Step::Reference { refname, .. } => Some((*n, refname)),
                         _ => None,
                     })
                     .transpose()
@@ -588,7 +585,7 @@ fn selector_commit_id<M: RefMetadata>(
 ) -> Result<Option<gix::ObjectId>> {
     Ok(match editor.lookup_step(selector)? {
         Step::Pick(Pick { id, .. }) => Some(id),
-        Step::Reference { refname } => Some(
+        Step::Reference { refname, .. } => Some(
             editor
                 .repo()
                 .find_reference(refname.as_ref())?
